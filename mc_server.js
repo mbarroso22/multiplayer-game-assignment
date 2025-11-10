@@ -71,26 +71,8 @@ io.on('connection', (socket) => {
     
     // Every half second, broadcast an update to ALL clients
     setInterval(() => {
-        //console.log("Update (tick) sent");
-        counter++;
-
         for (const id in players){
-            //console.log(id);
-            if( players[id].rf < circ_rf)
-                players[id].rf += .05;
-            
-            for (const id2 in players){
-      
-                if( id === id2 )
-                    continue;
-            
-                const dx = players[id].x - players[id2].x;
-                const dy = players[id].y - players[id2].y;
-                if (Math.sqrt(dx*dx + dy*dy) <= (players[id].rf+players[id2].rf) ){
-                    players[id].health  = Math.max(players[id].health - players[id].rf/100, 0);
-                    players[id2].health = Math.max(players[id2].health - players[id2].rf/100, 0);
-                }  
-            }
+            players[id].health -= 1;
         }
 
         socket.broadcast.emit('update', { players });
