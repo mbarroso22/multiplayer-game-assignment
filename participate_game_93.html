@@ -18,12 +18,8 @@
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const msg = sessionStorage.getItem('mySessionName') || '_';
-    //console.log("Session st: " + msg)
-    //const socket = io();
     const socket = io("http://145.132.97.96:3003",{
-        auth: {
-            token: msg
-        }
+        auth: { token: msg }
     });
 
     let playerId = null;
@@ -36,7 +32,6 @@
 
     socket.on('join', (player) => {
         players[player.id] = player;
-        //console.log(Object.keys(players).length);
     });
 
     socket.on('move', ({ id, x, y }) => {
@@ -61,13 +56,11 @@
     document.addEventListener('keydown', (e) => {
         const me = players[playerId];
         if (!me) return;
-        const speed = 5;
-        if (e.key === 'ArrowUp')    me.y = Math.max(me.y - speed, 0);
-        if (e.key === 'ArrowDown')  me.y = Math.min(me.y + speed, canvas.height);
-        if (e.key === 'ArrowLeft')  me.x = Math.max(me.x - speed, 0);
-        if (e.key === 'ArrowRight') me.x = Math.min(me.x + speed, canvas.width);
+        if (e.key === 'ArrowUp')    me.y = Math.max(me.y - 1, 0);
+        if (e.key === 'ArrowDown')  me.y = Math.min(me.y + 1, canvas.height);
+        if (e.key === 'ArrowLeft')  me.x = Math.max(me.x - 1, 0);
+        if (e.key === 'ArrowRight') me.x = Math.min(me.x + 1, canvas.width);
         socket.emit('move', { x: me.x, y: me.y });
-        //console.log('Keypress/emit ' + me.x + ' : ' + me.y + ' : ' + canvas.height);
     });
 
     canvas.addEventListener('click', evt => {
@@ -75,10 +68,8 @@
         const mouseX = evt.clientX - rectBounds.left;
         const mouseY = evt.clientY - rectBounds.top;
 
-        socket.emit('jump', { xy: 25 });
-       
+        socket.emit('jump', { xy: 25 });  // simply jumps  
     });
-      
       
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);

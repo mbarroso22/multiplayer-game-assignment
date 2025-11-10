@@ -11,12 +11,6 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const circ_r = 8; // should match the number in html
-const circ_rf = 45;
-const update_period = 0.5;  //seconds
-const reset_limit = 12; // seconds
-
-
 app.use(express.urlencoded({ extended: true })); // needed for post
 
 // app.use(express.static('public'));
