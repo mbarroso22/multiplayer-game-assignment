@@ -49,6 +49,8 @@
     socket.on('update', ({ players: allPlayers }) => {
         for (const id in allPlayers){
             players[id].health = allPlayers[id].health; // only copy health as an example
+            players[id].x = allPlayers[id].x;
+            players[id].y = allPlayers[id].y;
         }
     });
       
