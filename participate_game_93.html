@@ -90,13 +90,13 @@
         for (const id in players) {
             const p = players[id];
 
-            ctx.font = "10px Georgia";
+            ctx.font = "14px Georgia";
             ctx.fillStyle = "red"; 
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText('*', p.x, p.y);
             
-            ctx.textAlign = "right";
+            ctx.textAlign = "left";
             ctx.fillStyle = "black";
             ctx.fillText(p.name, p.x, p.y);
         }
