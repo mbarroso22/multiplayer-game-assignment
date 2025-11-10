@@ -48,7 +48,6 @@ io.on('connection', (socket) => {
 
     socket.on('move', ({ x, y }) => {
         if (players[id]) {
-            //   console.log("In Move for player index: " + players[id].name);
             players[id].x = x;
             players[id].y = y;
             io.emit('move', { id, x, y });
@@ -56,11 +55,7 @@ io.on('connection', (socket) => {
     });
     
     socket.on('jump', ({ xy }) => {
-        console.log(xy);
         if (players[id]){
-            console.log(players[id].x);
-            players[id].x += xy;
-            console.log(players[id].x);
             players[id].y += xy;
         }
         
@@ -73,8 +68,7 @@ io.on('connection', (socket) => {
         }
 
         socket.broadcast.emit('update', { players });
-    }, 500);
-    
+    }, 500);    
     
     socket.on('disconnect', () => {
         delete players[id];
