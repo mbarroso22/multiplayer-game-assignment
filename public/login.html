@@ -5,15 +5,15 @@
   <h1>Please Login</h1>
   <form action="/login" method="POST">
       <label>
-      First Name:<br />
+      First Name:
       <input type="text" id="name" name="name" required />
-      </label>
+      </label><br />
 
 
       <label>
-          Password:<br />
+          Password:
           <input type="password" name="password" placeholder="Password" required autofocus>
-      </label>
+      </label><br />
 
       <button type="submit" onclick="
         sessionStorage.setItem('mySessionName', document.getElementById('name').value);">
