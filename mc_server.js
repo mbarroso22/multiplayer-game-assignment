@@ -38,7 +38,7 @@ io.on('connection', (socket) => {
     
     const color = '#AABBCC';
     players[id] = { id, x: Math.floor(Math.random()*600), y: Math.floor(Math.random()*400), color,
-                    name: token, rf: circ_r*2, health: 100, counter: 0};
+                    name: token, health: 100};
 
     // Send the current state and new player info to client
     socket.emit('init', { id, players });
