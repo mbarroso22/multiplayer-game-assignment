@@ -61,12 +61,11 @@ io.on('connection', (socket) => {
         }
     });
     
-    socket.on('shrink', ({ rf }) => {
-        if (players[id])
-            if( counter * update_period > reset_limit ){
-                players[id].rf = circ_r;
-                counter = 0;
-            }
+    socket.on('jump', ({ xy }) => {
+        if (players[id]){
+            players[id].x += xy;
+            players[id].y += xy;
+        }
         
     });
     
@@ -92,7 +91,6 @@ io.on('connection', (socket) => {
                     players[id2].health = Math.max(players[id2].health - players[id2].rf/100, 0);
                 }  
             }
-
         }
 
         socket.broadcast.emit('update', { players });

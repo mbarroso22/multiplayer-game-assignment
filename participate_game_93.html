@@ -80,15 +80,8 @@
         const mouseX = evt.clientX - rectBounds.left;
         const mouseY = evt.clientY - rectBounds.top;
 
-        // Distance from click to circle center
-        const dx = mouseX - players[playerId].x;
-        const dy = mouseY - players[playerId].y;
-        if (Math.sqrt(dx*dx + dy*dy) <= circ_r) {
-            // alert('Circle clicked!');
-            socket.emit('shrink', { rf: circ_r });
-            // players[playerId].rf = circ_r;
-        }
-        
+        socket.emit('jump', { xy: 25 });
+       
     });
       
       
@@ -96,42 +89,14 @@
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         for (const id in players) {
             const p = players[id];
-            if( p.health > 0){
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, circ_r, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
 
-                if (id === playerId) {
-                    ctx.strokeStyle = '#F00';
-                    ctx.lineWidth = 3;
-                    ctx.stroke();
-                }
-
-                // the field of influence
-                ctx.globalAlpha = 0.3;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.rf, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.fill();
-                ctx.globalAlpha = 1.0;
-            }else{
-                ctx.font = "24px Georgia";
-                ctx.fillStyle = "red"; 
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText('X', p.x, p.y);
-            }
-
-            ctx.font = "16px Georgia";
-            ctx.fillStyle = "black"; 
-            ctx.textAlign = "center";   // left, right, center
-            ctx.textBaseline = "bottom"; // top, hanging, middle, alphabetic, ideographic, bottom
-            ctx.fillText(p.name, p.x, p.y-1.5*circ_r);
-            ctx.font = "12px Georgia";
-            ctx.fillText(p.health.toFixed(0), p.x, p.y+3.5*circ_r);
-
+            ctx.font = "24px Georgia";
+            ctx.fillStyle = "red"; 
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText('*', p.x, p.y);
         }
+
         requestAnimationFrame(draw);
     }
 
