@@ -95,6 +95,8 @@
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText('*', p.x, p.y);
+            
+            ctx.fillText(p.name, p.x, p.y-1.5*circ_r);
         }
 
         requestAnimationFrame(draw);
