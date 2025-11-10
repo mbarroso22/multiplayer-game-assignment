@@ -1,0 +1,12 @@
+
+services:
+  nodeapp:
+    build: .
+    ports:
+      - "3003:3003"
+    volumes:
+      - .:/usr/src/mc_app
+    working_dir: /usr/src/mc_app
+    command: npm start
+    environment:
+      - NODE_ENV=development

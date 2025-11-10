@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Login</title></head>
+<body>
+  <h1>Please Login</h1>
+  <form action="/login" method="POST">
+      <label>
+      First Name:<br />
+      <input type="text" id="name" name="name" required />
+      </label>
+
+
+      <label>
+          Password:<br />
+          <input type="password" name="password" placeholder="Password" required autofocus>
+      </label>
+
+      <button type="submit" onclick="
+        sessionStorage.setItem('mySessionName', document.getElementById('name').value);">
+        Enter
+      </button>
+  </form>
+  <p style="color:red;">
+    <!-- show error if ?error=1 -->
+    <script>
+      if (new URLSearchParams(window.location.search).has('error')) {
+        document.write('Incorrect password');
+      }
+    </script>
+  </p>
+</body>
+</html>

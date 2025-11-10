@@ -1,0 +1,163 @@
+// server.js
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const { v4: uuidv4 } = require('uuid');
+const path = require("path");
+const session = require('express-session');
+require('dotenv').config();   // ← loads .env into process.env
+
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+const circ_r = 8; // should match the number in html
+const circ_rf = 45;
+const update_period = 0.5;  //seconds
+const reset_limit = 12; // seconds
+
+
+app.use(express.urlencoded({ extended: true })); // needed for post
+
+// app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, "public")));
+
+const players = {}; // id → { id, x, y, color }
+
+io.on('connection', (socket) => {
+    console.log('In Connection');
+    const { token } = socket.handshake.auth;
+    
+    if ( token === "_"){
+        console.log("This user is not logged in - not adding.");
+        return;
+    }    
+    
+    if (typeof token === "undefined"){
+        console.log("Connection NOT established -  undefined token");
+        return;
+    }
+        
+    let counter = 0;
+    const id = uuidv4();
+    console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
+    
+    const color = '#AABBCC';
+    players[id] = { id, x: Math.floor(Math.random()*600), y: Math.floor(Math.random()*400), color,
+                    name: token, rf: circ_r*2, health: 100, counter: 0};
+
+    // Send the current state and new player info to client
+    socket.emit('init', { id, players });
+
+    // Notify all others
+    socket.broadcast.emit('join', players[id]);
+
+    socket.on('move', ({ x, y }) => {
+        if (players[id]) {
+            //   console.log("In Move for player index: " + players[id].name);
+            players[id].x = x;
+            players[id].y = y;
+            io.emit('move', { id, x, y });
+        }
+    });
+    
+    socket.on('shrink', ({ rf }) => {
+        if (players[id])
+            if( counter * update_period > reset_limit ){
+                players[id].rf = circ_r;
+                counter = 0;
+            }
+        
+    });
+    
+    // Every half second, broadcast an update to ALL clients
+    setInterval(() => {
+        //console.log("Update (tick) sent");
+        counter++;
+
+        for (const id in players){
+            //console.log(id);
+            if( players[id].rf < circ_rf)
+                players[id].rf += .05;
+            
+            for (const id2 in players){
+      
+                if( id === id2 )
+                    continue;
+            
+                const dx = players[id].x - players[id2].x;
+                const dy = players[id].y - players[id2].y;
+                if (Math.sqrt(dx*dx + dy*dy) <= (players[id].rf+players[id2].rf) ){
+                    players[id].health  = Math.max(players[id].health - players[id].rf/100, 0);
+                    players[id2].health = Math.max(players[id2].health - players[id2].rf/100, 0);
+                }  
+            }
+
+        }
+
+        socket.broadcast.emit('update', { players });
+    }, 500);
+    
+    
+    socket.on('disconnect', () => {
+        delete players[id];
+        io.emit('leave', id);
+    });        
+});
+    
+
+// ========= Authentication related
+// 2) Session middleware
+app.use(session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        httpOnly: true,
+        // secure: true, // enable if you serve over HTTPS
+        maxAge: 1000 * 60 * 60 // 1 hour
+    }
+}));
+
+// 3) Middleware to protect routes
+function requireAuth(req, res, next) {
+    if (req.session.authenticated) return next();
+    res.redirect('/login');
+}
+
+// 4) Login form
+app.get('/login', (req, res) => {
+    console.log('in app GET /login');
+    res.sendFile(path.join(__dirname, 'public/login.html'));
+});
+
+// 5) Login handler
+app.post('/login', (req, res) => {
+    const { name, password } = req.body;
+    console.log('in app POST /login');
+    console.log(req.body);
+    if (password === process.env.SHARED_PASSWORD) {
+        req.session.authenticated = true;
+        return res.redirect('/canvas');
+    }
+    // on failure, you might re‑render with an error message
+    res.redirect('/login?error=1');
+});
+
+// 6) Protected canvas page
+app.get('/canvas', requireAuth, (req, res) => {
+    //res.sendFile(path.join(__dirname, 'participate55.html'));
+    res.sendFile(path.join(__dirname, 'participate_game_93.html'));
+});
+
+// 7) Optionally allow logout
+app.post('/logout', (req, res) => {
+    req.session.destroy(() => res.redirect('/login'));
+});
+
+
+
+const PORT = 3003;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`Socket.IO server running at http://localhost:${PORT}`);
+});

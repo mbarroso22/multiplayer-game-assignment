@@ -1,0 +1,11 @@
+{
+  "name": "mc_node",
+  "version": "1.0.0",
+  "main": "mc_server.js",
+  "scripts": {
+    "start": "node mc_server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0"
+  }
+}
