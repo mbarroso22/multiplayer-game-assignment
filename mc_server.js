@@ -64,7 +64,9 @@ io.on('connection', (socket) => {
     socket.on('jump', ({ xy }) => {
         console.log(xy);
         if (players[id]){
+            console.log(players[id].x);
             players[id].x += xy;
+            console.log(players[id].x);
             players[id].y += xy;
         }
         
