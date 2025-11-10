@@ -15,13 +15,10 @@
   <canvas id="game" width="800" height="600"></canvas>
   <script src="/socket.io/socket.io.js"></script>
   <script>
-    var start_time;
-    const circ_r = 8;
-      
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
     const msg = sessionStorage.getItem('mySessionName') || '_';
-    console.log("Session st: " + msg)
+    //console.log("Session st: " + msg)
     //const socket = io();
     const socket = io("http://145.132.97.96:3003",{
         auth: {
@@ -39,22 +36,19 @@
 
     socket.on('join', (player) => {
         players[player.id] = player;
-        console.log(Object.keys(players).length);
+        //console.log(Object.keys(players).length);
     });
 
     socket.on('move', ({ id, x, y }) => {
         if (players[id]) {
             players[id].x = x;
             players[id].y = y;
-            const elapsed = performance.now() - start_time;
-            console.log(`Elapsed: ${elapsed.toFixed(2)} ms`);
         }
     });
 
     socket.on('update', ({ players: allPlayers }) => {
         for (const id in allPlayers){
-            players[id].rf = allPlayers[id].rf;
-            players[id].health = allPlayers[id].health;
+            players[id].health = allPlayers[id].health; // only copy health as an example
         }
     });
       
@@ -71,8 +65,7 @@
         if (e.key === 'ArrowLeft')  me.x = Math.max(me.x - speed, 0);
         if (e.key === 'ArrowRight') me.x = Math.min(me.x + speed, canvas.width);
         socket.emit('move', { x: me.x, y: me.y });
-        console.log('Keypress/emit ' + me.x + ' : ' + me.y + ' : ' + canvas.height);
-        start_time = performance.now();
+        //console.log('Keypress/emit ' + me.x + ' : ' + me.y + ' : ' + canvas.height);
     });
 
     canvas.addEventListener('click', evt => {
@@ -90,15 +83,16 @@
         for (const id in players) {
             const p = players[id];
 
-            ctx.font = "14px Georgia";
+            ctx.font = "24px Georgia";
             ctx.fillStyle = "red"; 
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText('*', p.x, p.y);
             
+            ctx.font = "14px Georgia";
             ctx.textAlign = "left";
             ctx.fillStyle = "black";
-            ctx.fillText(p.name, p.x, p.y);
+            ctx.fillText(p.name, p.x+6, p.y);
         }
 
         requestAnimationFrame(draw);
