@@ -32,7 +32,6 @@ io.on('connection', (socket) => {
         return;
     }
         
-    let counter = 0;
     const id = uuidv4();
     console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
     
@@ -63,13 +62,14 @@ io.on('connection', (socket) => {
     });
     
     // Every half second, broadcast an update to ALL clients
+    let counter = 0;
     setInterval(() => {
         for (const id in players){
             players[id].health -= .25; // Constantly depleting health
             
-            if( count++ > 3 ){ // toggle color periodically
+            if( counter++ > 3 ){ // toggle color periodically
                 players[id].color = (players[id].color === color) ? color2 : color;
-            count = 0;
+            counter = 0;
             }
         }
         
