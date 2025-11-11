@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true })); // needed for post
 // app.use(express.static('public'));
 app.use(express.static(path.join(__dirname, "public")));
 
-const players = {}; // id → { id, x, y, color }
+const players = {}; // id → { id, x, y, color, name, health }
 
 io.on('connection', (socket) => {
     console.log('In Connection');
@@ -64,7 +64,7 @@ io.on('connection', (socket) => {
     // Every half second, broadcast an update to ALL clients
     setInterval(() => {
         for (const id in players){
-            players[id].health -= 1;
+            players[id].health -= .25; // Constantly depleting health
         }
 
         socket.broadcast.emit('update', { players });
@@ -125,7 +125,6 @@ app.get('/canvas', requireAuth, (req, res) => {
 app.post('/logout', (req, res) => {
     req.session.destroy(() => res.redirect('/login'));
 });
-
 
 
 const PORT = 3003;

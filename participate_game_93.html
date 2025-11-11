@@ -42,6 +42,7 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
+        console.log("AAA: " + players)
         for (const id in allPlayers){
             console.log("AAA: " + players[id].name)
             players[id].health = allPlayers[id].health; // copy health
