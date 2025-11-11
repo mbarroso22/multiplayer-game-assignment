@@ -36,7 +36,8 @@ io.on('connection', (socket) => {
     const id = uuidv4();
     console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
     
-    const color = '#AABBCC';
+    const color = '#2266CC';
+    const color2 = '#337722';
     players[id] = { id, x: Math.floor(Math.random()*600), y: Math.floor(Math.random()*400), color,
                     name: token, health: 100};
 
@@ -63,10 +64,30 @@ io.on('connection', (socket) => {
     
     // Every half second, broadcast an update to ALL clients
     setInterval(() => {
+        
+        const color1 = 'rgb(240, 240, 240)'; // #f0f0f0
+        const color2 = 'rgb(51, 51, 51)';    // #333
+
+// Set the default color so the toggle will work on the first click
+element.style.backgroundColor = color1;
+
+button.addEventListener('click', () => {
+  // Get the current color
+  let currentColor = element.style.backgroundColor;
+
+  // Toggle it:
+  // (condition) ? (value if true) : (value if false)
+  element.style.backgroundColor = (currentColor === color1) ? color2 : color1;
+        
         for (const id in players){
             players[id].health -= .25; // Constantly depleting health
+            
+            if( count++ > 3 ){ // toggle color periodically
+                players[id].color = (players[id].color === color) ? color2 : color;
+            count = 0;
+            }
         }
-
+        
         socket.broadcast.emit('update', { players });
     }, 500);    
     

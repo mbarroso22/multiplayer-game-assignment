@@ -42,12 +42,9 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
-        console.log("AAA: " + players);
         for (const id in allPlayers){
-            console.log("AAA: " + players[id].name);
-            players[id].health = allPlayers[id].health; // copy health
-            players[id].x = allPlayers[id].x;           // copy x
-            players[id].y = allPlayers[id].y;
+            players[id].health = allPlayers[id].health; // copy health sent from server
+            players[id].color = allPlayers[id].color;   // copy color
         }
     });
       
@@ -82,8 +79,8 @@
         for (const id in players) {
             const p = players[id];
 
-            ctx.font = "24px Georgia";
-            ctx.fillStyle = "red"; 
+            ctx.font = "26px Georgia";
+            ctx.fillStyle = players[id].color; 
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText('*', p.x, p.y);
