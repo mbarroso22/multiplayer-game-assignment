@@ -18,6 +18,8 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const players = {}; // id → { id, x, y, color, name, health }
 
+const intervalId = null;
+
 io.on('connection', (socket) => {
     console.log('In Connection');
     const { token } = socket.handshake.auth;
