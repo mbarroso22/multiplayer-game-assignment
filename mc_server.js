@@ -104,7 +104,7 @@ app.use(session({
 
 // 3) Middleware to protect routes
 function requireAuth(req, res, next) {
-    if (req.session.authenticated) return next();
+    //if (req.session.authenticated) return next();
     res.redirect('/login');
 }
 
