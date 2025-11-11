@@ -43,8 +43,9 @@
 
     socket.on('update', ({ players: allPlayers }) => {
         for (const id in allPlayers){
-            players[id].health = allPlayers[id].health; // only copy health as an example
-            players[id].x = allPlayers[id].x;
+            console.log("AAA: " + players[id].name)
+            players[id].health = allPlayers[id].health; // copy health
+            players[id].x = allPlayers[id].x;           // copy x
             players[id].y = allPlayers[id].y;
         }
     });
@@ -60,14 +61,15 @@
         if (e.key === 'ArrowDown')  me.y = Math.min(me.y + 1, canvas.height);
         if (e.key === 'ArrowLeft')  me.x = Math.max(me.x - 1, 0);
         if (e.key === 'ArrowRight') me.x = Math.min(me.x + 1, canvas.width);
-        socket.emit('move', { x: me.x, y: me.y });
+        socket.emit('move', { x: me.x, y: me.y }); // send 'move' message to server every time an arrow key is pressed
     });
 
     canvas.addEventListener('click', evt => {
         const rectBounds = canvas.getBoundingClientRect();
         const mouseX = evt.clientX - rectBounds.left;
         const mouseY = evt.clientY - rectBounds.top;
-
+        // mouse coordinates mouseX and mouseY will be available in this scope 
+        // when the mouse is clicked on the canvas
         socket.emit('jump', { xy: 25 });  // simply jumps  
     });
       
