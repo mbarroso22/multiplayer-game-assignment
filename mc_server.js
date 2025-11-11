@@ -64,21 +64,6 @@ io.on('connection', (socket) => {
     
     // Every half second, broadcast an update to ALL clients
     setInterval(() => {
-        
-        const color1 = 'rgb(240, 240, 240)'; // #f0f0f0
-        const color2 = 'rgb(51, 51, 51)';    // #333
-
-// Set the default color so the toggle will work on the first click
-element.style.backgroundColor = color1;
-
-button.addEventListener('click', () => {
-  // Get the current color
-  let currentColor = element.style.backgroundColor;
-
-  // Toggle it:
-  // (condition) ? (value if true) : (value if false)
-  element.style.backgroundColor = (currentColor === color1) ? color2 : color1;
-        
         for (const id in players){
             players[id].health -= .25; // Constantly depleting health
             
