@@ -65,12 +65,14 @@ io.on('connection', (socket) => {
     let counter = 0;
     setInterval(() => {
         for (const id in players){
-            players[id].health -= .25; // Constantly depleting health
+            //players[id].health -= .25; // Constantly depleting health
+            if( (players[id].health -= .25) <= 0 )
+                players[id].health == 0;
             
             if( counter++ > 3 ){ // toggle color periodically
                 players[id].color = (players[id].color === color) ? color2 : color;
                 counter = 0;
-                console.log(players[id].color);
+                console.log(players[id].name + '  ' + players[id].color);
             }
         }
         
