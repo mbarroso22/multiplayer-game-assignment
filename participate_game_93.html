@@ -42,6 +42,7 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
+        console.log('In update');
         for (const id in allPlayers){
             players[id].health = allPlayers[id].health; // copy health sent from server
             players[id].color = allPlayers[id].color;   // copy color
@@ -88,7 +89,7 @@
             ctx.font = "14px Georgia";
             ctx.textAlign = "left";
             ctx.fillStyle = "black";
-            ctx.fillText(p.name+' ('+Math.round(p.health)+')', p.x+8, p.y+4);
+            ctx.fillText(p.name+' ('+Math.round(p.health)+')', p.x+8, p.y-12);
         }
 
         requestAnimationFrame(draw);
