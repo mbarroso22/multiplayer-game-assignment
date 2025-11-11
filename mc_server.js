@@ -69,7 +69,8 @@ io.on('connection', (socket) => {
             
             if( counter++ > 3 ){ // toggle color periodically
                 players[id].color = (players[id].color === color) ? color2 : color;
-            counter = 0;
+                counter = 0;
+                console.log(players[id].color);
             }
         }
         
