@@ -77,7 +77,8 @@ io.on('connection', (socket) => {
             }
         }
         console.log('Broadcast ' + id + ' ' + players[id].name);
-        socket.broadcast.emit('update', { players });
+        socket.broadcast.emit('update', { players }); // to all others
+        socket.emit('update', { players });           // to itself
     }, 500);    
 
     
@@ -104,7 +105,7 @@ app.use(session({
 
 // 3) Middleware to protect routes
 function requireAuth(req, res, next) {
-    //if (req.session.authenticated) return next();
+    if (req.session.authenticated) return next();
     res.redirect('/login');
 }
 
