@@ -71,12 +71,11 @@ io.on('connection', (socket) => {
             if( players[id].health <= 0 )
                 players[id].health = 0;
 
-            if( counter++ > 10 ){ // toggle color periodically
+            if( counter++ > 3 ){ // toggle color periodically
                 players[id].color = (players[id].color === color) ? color2 : color;
                 counter = 0;
             }
         }
-        console.log('Broadcast ' + id + ' ' + players[id].name);
         socket.broadcast.emit('update', { players }); // to all others
         socket.emit('update', { players });           // to itself
     }, 500);    
