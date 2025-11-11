@@ -76,7 +76,7 @@ io.on('connection', (socket) => {
                 counter = 0;
             }
         }
-        console.log('Broadcast ' + id);
+        console.log('Broadcast ' + id + ' ' + players[id].name);
         socket.broadcast.emit('update', { players });
     }, 500);    
 
