@@ -65,8 +65,8 @@ io.on('connection', (socket) => {
     let counter = 0;
     setInterval(() => {
         for (const id in players){
-            //players[id].health -= .25; // Constantly depleting health
-            if( (players[id].health -= .25) <= 0 )
+            players[id].health -= .25; // Constantly depleting health
+            if( players[id].health <= 0 )
                 players[id].health == 0;
             
             if( counter++ > 3 ){ // toggle color periodically
@@ -77,7 +77,7 @@ io.on('connection', (socket) => {
         }
         
         socket.broadcast.emit('update', { players });
-    }, 500);    
+    }, 1000);    
     
     socket.on('disconnect', () => {
         delete players[id];
@@ -126,7 +126,6 @@ app.post('/login', (req, res) => {
 
 // 6) Protected canvas page
 app.get('/canvas', requireAuth, (req, res) => {
-    //res.sendFile(path.join(__dirname, 'participate55.html'));
     res.sendFile(path.join(__dirname, 'participate_game_93.html'));
 });
 
