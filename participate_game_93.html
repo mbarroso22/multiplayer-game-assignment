@@ -79,7 +79,7 @@
         for (const id in players) {
             const p = players[id];
 
-            ctx.font = "28px Georgia";
+            ctx.font = "bold 30px Georgia";
             ctx.fillStyle = players[id].color; 
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
@@ -88,7 +88,7 @@
             ctx.font = "14px Georgia";
             ctx.textAlign = "left";
             ctx.fillStyle = "black";
-            ctx.fillText(p.name, p.x+6, p.y);
+            ctx.fillText(p.name+' ('+p.health+')', p.x+6, p.y);
         }
 
         requestAnimationFrame(draw);
