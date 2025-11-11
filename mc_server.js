@@ -18,8 +18,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 const players = {}; // id → { id, x, y, color, name, health }
 
-let myIntervalId = null;
-
 io.on('connection', (socket) => {
     console.log('In Connection');
     const { token } = socket.handshake.auth;
@@ -59,36 +57,30 @@ io.on('connection', (socket) => {
     socket.on('jump', ({ xy }) => {
         if (players[id]){
             players[id].y += xy;
-        }
-        
+        } 
     });
     
     // Every half second, broadcast an update to ALL clients
     let counter = 0;
 
-    if (myIntervalId) {
-        // If interval not null, the interval timer is running - stop it.
-        clearInterval(myIntervalId);
-        myIntervalId = null;
-    } else {
-        myIntervalId = setInterval(() => {
-            for (const id in players){
-                players[id].health -= .25; // Constantly depleting health
-                if( players[id].health <= 0 )
-                    players[id].health = 0;
+    myIntervalId = setInterval(() => {
+        for (const id in players){
+            players[id].health -= .25; // Constantly depleting health
+            if( players[id].health <= 0 )
+                players[id].health = 0;
 
-                if( counter++ > 3 ){ // toggle color periodically
-                    players[id].color = (players[id].color === color) ? color2 : color;
-                    counter = 0;
-                    console.log(players[id].name + '  ' + players[id].color);
-                }
+            if( counter++ > 3 ){ // toggle color periodically
+                players[id].color = (players[id].color === color) ? color2 : color;
+                counter = 0;
+                console.log(players[id].name + '  ' + players[id].color);
             }
-        
-            socket.broadcast.emit('update', { players });
-        }, 1000);    
-    }
+        }
+        socket.broadcast.emit('update', { players });
+    }, 1000);    
+
     
     socket.on('disconnect', () => {
+        clearInterval(intervalId);
         delete players[id];
         io.emit('leave', id);
     });        
