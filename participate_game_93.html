@@ -42,9 +42,9 @@
     });
 
     socket.on('update', ({ players: allPlayers }) => {
-        console.log("AAA: " + players)
+        console.log("AAA: " + players);
         for (const id in allPlayers){
-            console.log("AAA: " + players[id].name)
+            console.log("AAA: " + players[id].name);
             players[id].health = allPlayers[id].health; // copy health
             players[id].x = allPlayers[id].x;           // copy x
             players[id].y = allPlayers[id].y;
@@ -71,6 +71,9 @@
         const mouseY = evt.clientY - rectBounds.top;
         // mouse coordinates mouseX and mouseY will be available in this scope 
         // when the mouse is clicked on the canvas
+        
+        
+        console.log("AAA: " + mouseX);
         socket.emit('jump', { xy: 25 });  // simply jumps  
     });
       
