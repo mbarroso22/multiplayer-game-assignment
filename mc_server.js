@@ -12,10 +12,10 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 const blocks = { 
-    0: { color: "#ffffff" },
-    1: { color: "#ffffff" },
-    2: { color: "#ffffff" },
-    3: { color: "#ffffff" }
+    0: { color: "#FF0000" }, //red
+    1: { color: "#0000FF" }, //blue
+    2: { color: "#FFFF00" }, //yellow
+    3: { color: "#008000" }  //green
 };
 
 const quadrantPlayers = {
