@@ -155,7 +155,7 @@ app.post('/logout', (req, res) => {
 });
 
 
-const PORT = 3003;
+const PORT = 3001;
 server.listen(PORT, '0.0.0.0', () => {
   console.log(`Socket.IO server running at http://localhost:${PORT}`);
 });
