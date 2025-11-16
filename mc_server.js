@@ -18,6 +18,14 @@ const blocks = {
     3: { color: "#ffffff" }
 };
 
+const quadrantPlayers = {
+    0: new Set(),  // top left
+    1: new Set(),  // top right
+    2: new Set(),  // bottom left
+    3: new Set()   // bottom right
+};
+
+const MAX_PLAYERS_PER_QUADRANT = 3;
 function getBlockIndex(x, y) {
     const midX = 800 / 2;
     const midY = 600 / 2;
@@ -66,11 +74,35 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('join', players[id]);
 
     socket.on('move', ({ x, y }) => {
-        if (players[id]) {
-            players[id].x = x;
-            players[id].y = y;
-            io.emit('move', { id, x, y });
-        }
+    if (!players[id]) return;
+
+    const oldBlock = getBlockIndex(players[id].x, players[id].y);
+    const newBlock = getBlockIndex(x, y);
+
+    // If player tries to enter a full quadrant, deny movement
+    if (newBlock !== oldBlock && quadrantPlayers[newBlock].size >= MAX_PLAYERS_PER_QUADRANT) {
+        // Tell the player they can't move there
+        socket.emit('moveDenied', { reason: "Quadrant is full" });
+        return;
+    }
+
+    // Update quadrant membership
+    if (newBlock !== oldBlock) {
+        quadrantPlayers[oldBlock].delete(id);
+        quadrantPlayers[newBlock].add(id);
+    }
+
+    // Apply movement
+    players[id].x = x;
+    players[id].y = y;
+
+    // Update block color (ownership)
+    blocks[newBlock].color = players[id].color;
+
+    io.emit('move', { id, x, y });
+    io.emit('blocksUpdate', blocks);
+    });
+
     });
     
     socket.on('jump', ({ xy }) => {
