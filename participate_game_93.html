@@ -89,16 +89,16 @@
         const w = canvas.width / 2;
         const h = canvas.height / 2;
 
-        ctx.fillStyle = blocks[0]?.color || "#ffffff";
+        ctx.fillStyle = blocks[0]?.color || "#FF0000";
         ctx.fillRect(0, 0, w, h);
 
-        ctx.fillStyle = blocks[1]?.color || "#ffffff";
+        ctx.fillStyle = blocks[1]?.color || "#0000FF";
         ctx.fillRect(w, 0, w, h);
 
-        ctx.fillStyle = blocks[2]?.color || "#ffffff";
+        ctx.fillStyle = blocks[2]?.color || "#FFFF00";
         ctx.fillRect(0, h, w, h);
 
-        ctx.fillStyle = blocks[3]?.color || "#ffffff";
+        ctx.fillStyle = blocks[3]?.color || "#008000";
         ctx.fillRect(w, h, w, h);
             for (const id in players) {
                 const p = players[id];
