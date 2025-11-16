@@ -23,16 +23,23 @@
     });
 
     let playerId = null;
+    let blocks = {};
     const players = {}; // id → { x, y, color }
 
-    socket.on('init', ({ id, players: allPlayers }) => {
+    socket.on('init', ({ id, players: allPlayers, blocks: serverBlocks }) => {
         playerId = id;
         Object.assign(players, allPlayers);
+        blocks = serverBlocks;
     });
 
     socket.on('join', (player) => {
         players[player.id] = player;
     });
+
+    socket.on('blocksUpdate', (updatedBlocks) => {
+    blocks = updatedBlocks;
+    });
+
 
     socket.on('move', ({ id, x, y }) => {
         if (players[id]) {
@@ -74,8 +81,23 @@
       
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (const id in players) {
-            const p = players[id];
+
+        const w = canvas.width / 2;
+        const h = canvas.height / 2;
+
+        ctx.fillStyle = blocks[0]?.color || "#ffffff";
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.fillStyle = blocks[1]?.color || "#ffffff";
+        ctx.fillRect(w, 0, w, h);
+
+        ctx.fillStyle = blocks[2]?.color || "#ffffff";
+        ctx.fillRect(0, h, w, h);
+
+        ctx.fillStyle = blocks[3]?.color || "#ffffff";
+        ctx.fillRect(w, h, w, h);
+            for (const id in players) {
+                const p = players[id];
 
             ctx.font = "bold 30px Georgia";
             ctx.fillStyle = players[id].color; 
