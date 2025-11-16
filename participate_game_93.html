@@ -59,6 +59,10 @@
         delete players[id];
     });
 
+    socket.on('moveDenied', ({ reason }) => {
+    console.log("Move blocked:", reason);
+    });
+
     document.addEventListener('keydown', (e) => {
         const me = players[playerId];
         if (!me) return;
