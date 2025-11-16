@@ -11,6 +11,23 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
+const blocks = { 
+    0: { color: "#ffffff" },
+    1: { color: "#ffffff" },
+    2: { color: "#ffffff" },
+    3: { color: "#ffffff" }
+};
+
+function getBlockIndex(x, y) {
+    const midX = 800 / 2;
+    const midY = 600 / 2;
+
+    if (x < midX && y < midY) return 0;
+    if (x >= midX && y < midY) return 1;
+    if (x < midX && y >= midY) return 2;
+    return 3;
+}
+
 app.use(express.urlencoded({ extended: true })); // needed for post
 
 // app.use(express.static('public'));
@@ -43,7 +60,7 @@ io.on('connection', (socket) => {
                     name: token, health: 100};
 
     // Send the current state and new player info to client
-    socket.emit('init', { id, players });
+    socket.emit('init', { id, players, blocks});
 
     // Notify all others
     socket.broadcast.emit('join', players[id]);
