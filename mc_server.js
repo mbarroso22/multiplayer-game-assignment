@@ -1,193 +1,239 @@
-// server.js
+// mc_server.js
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const { v4: uuidv4 } = require('uuid');
-const path = require("path");
+const path = require('path');
 const session = require('express-session');
-require('dotenv').config();   // ← loads .env into process.env
+require('dotenv').config();   // loads .env into process.env
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-const blocks = { 
-    0: { color: "#FF0000" }, //red
-    1: { color: "#0000FF" }, //blue
-    2: { color: "#FFFF00" }, //yellow
-    3: { color: "#008000" }  //green
-};
+// ===== Canvas / grid settings =====
+const CANVAS_WIDTH = 800;
+const CANVAS_HEIGHT = 600;
+const TILE_SIZE = 10;                       // smaller tiles → more space
+const GRID_COLS = CANVAS_WIDTH / TILE_SIZE; // 80
+const GRID_ROWS = CANVAS_HEIGHT / TILE_SIZE;// 60
 
-const quadrantPlayers = {
-    0: new Set(),  // top left
-    1: new Set(),  // top right
-    2: new Set(),  // bottom left
-    3: new Set()   // bottom right
-};
+// tiles[row][col] = { ownerId, color } or null
+let tiles = [];
+function resetTiles() {
+  tiles = [];
+  for (let r = 0; r < GRID_ROWS; r++) {
+    const row = [];
+    for (let c = 0; c < GRID_COLS; c++) {
+      row.push(null);
+    }
+    tiles.push(row);
+  }
+}
+resetTiles();
 
-const MAX_PLAYERS_PER_QUADRANT = 3;
-function getBlockIndex(x, y) {
-    const midX = 800 / 2;
-    const midY = 600 / 2;
+// ===== Players =====
+// players[id] = { id, name, x, y, color }
+const players = {};
 
-    if (x < midX && y < midY) return 0;
-    if (x >= midX && y < midY) return 1;
-    if (x < midX && y >= midY) return 2;
-    return 3;
+const COLORS = [
+  '#ff3b30', '#ff9500', '#ffcc00', '#4cd964',
+  '#5ac8fa', '#007aff', '#5856d6', '#ff2d55',
+  '#00c7be', '#ff9f0a', '#34c759', '#af52de'
+];
+
+function getRandomColor(usedColors) {
+  // usedColors is an array of colors already taken
+  const available = COLORS.filter(c => !usedColors.includes(c));
+  if (available.length === 0) {
+    // fallback if somehow all colors are used
+    return COLORS[Math.floor(Math.random() * COLORS.length)];
+  }
+  return available[Math.floor(Math.random() * available.length)];
 }
 
-app.use(express.urlencoded({ extended: true })); // needed for post
+function clamp(val, min, max) {
+  return Math.max(min, Math.min(max, val));
+}
 
-// app.use(express.static('public'));
-app.use(express.static(path.join(__dirname, "public")));
+function paintTileForPlayer(player) {
+  const col = Math.floor(player.x / TILE_SIZE);
+  const row = Math.floor(player.y / TILE_SIZE);
+  if (
+    row >= 0 && row < GRID_ROWS &&
+    col >= 0 && col < GRID_COLS
+  ) {
+    tiles[row][col] = { ownerId: player.id, color: player.color };
+    return { row, col };
+  }
+  return null;
+}
 
-const players = {}; // id → { id, x, y, color, name, health }
+// ===== Express middleware =====
+app.use(express.urlencoded({ extended: true })); // needed for POST form
+app.use(express.static(path.join(__dirname, 'public')));
 
-const intervalId = null;
-
+// ===== Socket.IO real-time logic =====
 io.on('connection', (socket) => {
-    console.log('In Connection');
-    const { token } = socket.handshake.auth;
-    
-    if ( token === "_"){
-        console.log("This user is not logged in - not adding.");
-        return;
-    }    
-    
-    if (typeof token === "undefined"){
-        console.log("Connection NOT established -  undefined token");
-        return;
-    }
-        
-    const id = uuidv4();
-    console.log("Connection established with name: " + token + " and socket id: " + socket.id + " user id: " + id);
-    
-    const color = '#1133CC';
-    const color2 = '#FF1122';
-    players[id] = { id, x: Math.floor(Math.random()*600), y: Math.floor(Math.random()*400), color,
-                    name: token, health: 100};
+  console.log('New socket connection');
+  const { token } = socket.handshake.auth || {};
 
-    // Send the current state and new player info to client
-    socket.emit('init', { id, players, blocks});
+  if (!token || token === '_') {
+    console.log('Invalid or missing token, disconnecting socket');
+    socket.disconnect(true);
+    return;
+  }
 
-    // Notify all others
-    socket.broadcast.emit('join', players[id]);
+  // Create player
+  const id = uuidv4();
+  const usedColors = Object.values(players).map(p => p.color);
+  const color = getRandomColor(usedColors);
 
-    socket.on('move', ({ x, y }) => {
-    if (!players[id]) return;
+  const startX = Math.floor(Math.random() * CANVAS_WIDTH);
+  const startY = Math.floor(Math.random() * CANVAS_HEIGHT);
 
-    const oldBlock = getBlockIndex(players[id].x, players[id].y);
-    const newBlock = getBlockIndex(x, y);
+  players[id] = {
+    id,
+    name: token,
+    x: startX,
+    y: startY,
+    color
+  };
 
-    // If player tries to enter a full quadrant, deny movement
-    if (newBlock !== oldBlock && quadrantPlayers[newBlock].size >= MAX_PLAYERS_PER_QUADRANT) {
-        // Tell the player they can't move there
-        socket.emit('moveDenied', { reason: "Quadrant is full" });
-        return;
-    }
+  // Paint starting tile
+  const startTile = paintTileForPlayer(players[id]);
 
-    // Update quadrant membership
-    if (newBlock !== oldBlock) {
-        quadrantPlayers[oldBlock].delete(id);
-        quadrantPlayers[newBlock].add(id);
-    }
+  console.log(`Player joined: ${token} (${id}) at (${startX}, ${startY})`);
 
-    // Apply movement
-    players[id].x = x;
-    players[id].y = y;
+  // Send initial state (full snapshot) to THIS client only
+  socket.emit('init', {
+    id,
+    players,
+    tiles
+  });
 
-    // Update block color (ownership)
-    blocks[newBlock].color = players[id].color;
+  // Notify others a new player joined
+  socket.broadcast.emit('playerJoin', players[id]);
 
-    io.emit('move', { id, x, y });
-    io.emit('blocksUpdate', blocks);
+  // Handle movement (delta updates)
+  socket.on('move', ({ dx, dy }) => {
+    const player = players[id];
+    if (!player) return;
+
+    const speed = 4; // 🔹 slower than before (was 10)
+
+    player.x = clamp(player.x + dx * speed, 0, CANVAS_WIDTH - 1);
+    player.y = clamp(player.y + dy * speed, 0, CANVAS_HEIGHT - 1);
+
+    // Paint tile and get which tile changed
+    const tilePos = paintTileForPlayer(player);
+
+    // Broadcast just this player's move
+    io.emit('playerMove', {
+      id: player.id,
+      x: player.x,
+      y: player.y
     });
 
+    // Broadcast the painted tile (delta)
+    if (tilePos) {
+      io.emit('paint', {
+        row: tilePos.row,
+        col: tilePos.col,
+        ownerId: player.id,
+        color: player.color
+      });
+    }
+  });
+
+  // Optional: respawn handler (you can call this from client later if you want)
+  socket.on('respawn', () => {
+    const player = players[id];
+    if (!player) return;
+    player.x = Math.floor(Math.random() * CANVAS_WIDTH);
+    player.y = Math.floor(Math.random() * CANVAS_HEIGHT);
+    const tilePos = paintTileForPlayer(player);
+
+    io.emit('playerMove', {
+      id: player.id,
+      x: player.x,
+      y: player.y
     });
-    
-    socket.on('jump', ({ xy }) => {
-        if (players[id]){
-            players[id].y += xy;
-        } 
-    });
-    
-    // Every half second, broadcast an update to ALL clients
-    let counter = 0;
+    if (tilePos) {
+      io.emit('paint', {
+        row: tilePos.row,
+        col: tilePos.col,
+        ownerId: player.id,
+        color: player.color
+      });
+    }
+  });
 
-    myIntervalId = setInterval(() => {
-        for (const id in players){
-            players[id].health -= .25; // Constantly depleting health
-            if( players[id].health <= 0 )
-                players[id].health = 0;
-
-            if( counter++ > 3 ){ // toggle color periodically
-                players[id].color = (players[id].color === color) ? color2 : color;
-                counter = 0;
-            }
-        }
-        socket.broadcast.emit('update', { players }); // to all others
-        socket.emit('update', { players });           // to itself
-    }, 500);    
-
-    
-    socket.on('disconnect', () => {
-        clearInterval(intervalId);
-        delete players[id];
-        io.emit('leave', id);
-    });        
+  socket.on('disconnect', () => {
+    console.log(`Player disconnected: ${id}`);
+    delete players[id];
+    io.emit('playerLeave', id);
+    // tiles remain painted – territory persists
+  });
 });
-    
 
-// ========= Authentication related
-// 2) Session middleware
-app.use(session({
-    secret: process.env.SESSION_SECRET,
+// ========= Authentication related =========
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET || 'dev-secret',
     resave: false,
     saveUninitialized: false,
     cookie: {
-        httpOnly: true,
-        // secure: true, // enable if you serve over HTTPS
-        maxAge: 1000 * 60 * 60 // 1 hour
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60 // 1 hour
     }
-}));
+  })
+);
 
-// 3) Middleware to protect routes
 function requireAuth(req, res, next) {
-    if (req.session.authenticated) return next();
-    res.redirect('/login');
+  if (req.session.authenticated) return next();
+  res.redirect('/login');
 }
 
-// 4) Login form
+// Root redirect
+app.get('/', (req, res) => {
+  if (req.session && req.session.authenticated) {
+    return res.redirect('/canvas');
+  }
+  return res.redirect('/login');
+});
+
+// Login form
 app.get('/login', (req, res) => {
-    console.log('in app GET /login');
-    res.sendFile(path.join(__dirname, 'public/login.html'));
+  console.log('GET /login');
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
 });
 
-// 5) Login handler
+// Login handler
 app.post('/login', (req, res) => {
-    const { name, password } = req.body;
-    console.log('in app POST /login');
-    console.log(req.body);
-    if (password === process.env.SHARED_PASSWORD) {
-        req.session.authenticated = true;
-        return res.redirect('/canvas');
-    }
-    // on failure, you might re‑render with an error message
-    res.redirect('/login?error=1');
+  const { name, password } = req.body;
+  console.log('POST /login', req.body);
+  if (password === process.env.SHARED_PASSWORD) {
+    req.session.authenticated = true;
+    req.session.username = name;
+    return res.redirect('/canvas');
+  }
+  res.redirect('/login?error=1');
 });
 
-// 6) Protected canvas page
+// Protected game page
 app.get('/canvas', requireAuth, (req, res) => {
-    res.sendFile(path.join(__dirname, 'participate_game_93.html'));
+  res.sendFile(path.join(__dirname, 'participate_game_93.html'));
 });
 
-// 7) Optionally allow logout
+// Logout
 app.post('/logout', (req, res) => {
-    req.session.destroy(() => res.redirect('/login'));
+  req.session.destroy(() => res.redirect('/login'));
 });
 
-
-const PORT = 3001;
+// ===== Start server =====
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Socket.IO server running at http://localhost:${PORT}`);
+  console.log(`Socket.IO server running at http://0.0.0.0:${PORT}`);
 });
+

@@ -2,124 +2,345 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Multiplayer Game</title>
+  <title>Multiplayer Territory Game</title>
   <style>
-    canvas { background: #f0f0f0; display: block; margin: 20px auto; border: 1px solid black;}
-      h1 { text-align: center;}
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #020617;
+      color: #e5e7eb;
+      margin: 0;
+      padding: 16px;
+    }
+    h1 {
+      text-align: center;
+      margin: 0 0 12px;
+    }
+    #top-bar {
+      text-align: center;
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 12px;
+    }
+    #layout {
+      display: flex;
+      justify-content: center;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    #game-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas {
+      background: #020617;
+      display: block;
+      border: 2px solid #e5e7eb;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.6);
+    }
+    #legend {
+      margin-top: 8px;
+      font-size: 13px;
+      max-width: 800px;
+      text-align: center;
+      color: #9ca3af;
+    }
+    #leaderboard {
+      width: 220px;
+      background: #020617;
+      border: 1px solid #1f2937;
+      border-radius: 8px;
+      padding: 10px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+    }
+    #leaderboard h2 {
+      margin: 0 0 8px;
+      font-size: 16px;
+      text-align: center;
+    }
+    #leaderboard-list {
+      font-size: 13px;
+      max-height: 540px;
+      overflow-y: auto;
+    }
+    .lb-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
+      border-bottom: 1px solid #111827;
+    }
+    .lb-entry:last-child {
+      border-bottom: none;
+    }
+    .lb-left {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .lb-swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 999px;
+      border: 1px solid #0b1120;
+    }
+    .lb-name {
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .lb-pct {
+      font-variant-numeric: tabular-nums;
+      color: #e5e7eb;
+    }
   </style>
 </head>
 <body>
-    <h1>
-        COM440 Multi-User Game
-    </h1>
-  <canvas id="game" width="800" height="600"></canvas>
+  <h1>COM440 – Territory Battle</h1>
+  <div id="top-bar">
+    <span id="status">Connecting…</span>
+  </div>
+
+  <div id="layout">
+    <div id="game-wrapper">
+      <canvas id="game" width="800" height="600"></canvas>
+      <div id="legend">
+        Use <strong>arrow keys</strong> to move. Every tile you pass over is painted with your color.  
+        Paint over other players' tiles to steal territory. Supports many players at once.
+      </div>
+    </div>
+
+    <aside id="leaderboard">
+      <h2>Leaderboard</h2>
+      <div id="leaderboard-list">
+        Waiting for data…
+      </div>
+    </aside>
+  </div>
+
   <script src="/socket.io/socket.io.js"></script>
   <script>
     const canvas = document.getElementById('game');
     const ctx = canvas.getContext('2d');
+    const statusEl = document.getElementById('status');
+    const leaderboardList = document.getElementById('leaderboard-list');
+
+    const TILE_SIZE = 10; // must match server
+    const GRID_COLS = canvas.width / TILE_SIZE; // 80
+    const GRID_ROWS = canvas.height / TILE_SIZE; // 60
+    const TOTAL_TILES = GRID_COLS * GRID_ROWS;
+
     const msg = sessionStorage.getItem('mySessionName') || '_';
-    const socket = io("http://145.132.97.96:3003",{
-        auth: { token: msg }
+
+    const socket = io("http://20.64.241.18:3003", {
+      auth: { token: msg }
     });
 
     let playerId = null;
-    let blocks = {};
-    const players = {}; // id → { x, y, color }
+    let players = {}; // id -> { id, name, x, y, color }
+    let tiles = [];   // 2D array: tiles[row][col] = { ownerId, color } or null
 
-    socket.on('init', ({ id, players: allPlayers, blocks: serverBlocks }) => {
-        playerId = id;
-        Object.assign(players, allPlayers);
-        blocks = serverBlocks;
-    });
-
-    socket.on('join', (player) => {
-        players[player.id] = player;
-    });
-
-    socket.on('blocksUpdate', (updatedBlocks) => {
-    blocks = updatedBlocks;
-    });
-
-
-    socket.on('move', ({ id, x, y }) => {
-        if (players[id]) {
-            players[id].x = x;
-            players[id].y = y;
+    function initEmptyTiles() {
+      tiles = [];
+      for (let r = 0; r < GRID_ROWS; r++) {
+        const row = [];
+        for (let c = 0; c < GRID_COLS; c++) {
+          row.push(null);
         }
+        tiles.push(row);
+      }
+    }
+    initEmptyTiles();
+
+    // ==== Socket events ====
+
+    socket.on('connect', () => {
+      statusEl.textContent = 'Connected. Use arrow keys to move and paint!';
     });
 
-    socket.on('update', ({ players: allPlayers }) => {
-        for (const id in allPlayers){
-            players[id].health = allPlayers[id].health; // copy health sent from server
-            players[id].color = allPlayers[id].color;   // copy color
-        }
-    });
-      
-    socket.on('leave', (id) => {
-        delete players[id];
+    socket.on('disconnect', () => {
+      statusEl.textContent = 'Disconnected from server.';
     });
 
-    socket.on('moveDenied', ({ reason }) => {
-    console.log("Move blocked:", reason);
+    socket.on('init', (data) => {
+      playerId = data.id;
+      players = data.players || {};
+      tiles = data.tiles || tiles;
+      const me = players[playerId];
+      statusEl.textContent = me ? `You are: ${me.name}` : 'Connected.';
+      updateLeaderboard();
     });
+
+    socket.on('playerJoin', (player) => {
+      players[player.id] = player;
+      updateLeaderboard();
+    });
+
+    socket.on('playerLeave', (id) => {
+      delete players[id];
+      updateLeaderboard();
+    });
+
+    // Delta: a single player's movement
+    socket.on('playerMove', ({ id, x, y }) => {
+      if (!players[id]) return;
+      players[id].x = x;
+      players[id].y = y;
+    });
+
+    // Delta: a single tile painted
+    socket.on('paint', ({ row, col, ownerId, color }) => {
+      if (
+        row >= 0 && row < GRID_ROWS &&
+        col >= 0 && col < GRID_COLS
+      ) {
+        tiles[row][col] = { ownerId, color };
+        updateLeaderboard();
+      }
+    });
+
+    // ==== Input handling ====
 
     document.addEventListener('keydown', (e) => {
-        const me = players[playerId];
-        if (!me) return;
-        if (e.key === 'ArrowUp')    me.y = Math.max(me.y - 1, 0);
-        if (e.key === 'ArrowDown')  me.y = Math.min(me.y + 1, canvas.height);
-        if (e.key === 'ArrowLeft')  me.x = Math.max(me.x - 1, 0);
-        if (e.key === 'ArrowRight') me.x = Math.min(me.x + 1, canvas.width);
-        socket.emit('move', { x: me.x, y: me.y }); // send 'move' message to server every time an arrow key is pressed
+      const dir = { dx: 0, dy: 0 };
+      if (e.key === 'ArrowUp') dir.dy = -1;
+      else if (e.key === 'ArrowDown') dir.dy = 1;
+      else if (e.key === 'ArrowLeft') dir.dx = -1;
+      else if (e.key === 'ArrowRight') dir.dx = 1;
+      else return;
+
+      e.preventDefault();
+      socket.emit('move', dir);
     });
 
-    canvas.addEventListener('click', evt => {
-        const rectBounds = canvas.getBoundingClientRect();
-        const mouseX = evt.clientX - rectBounds.left;
-        const mouseY = evt.clientY - rectBounds.top;
-        // mouse coordinates mouseX and mouseY will be available in this scope 
-        // when the mouse is clicked on the canvas
-        
-        socket.emit('jump', { xy: 25 });  // simply jumps  
-    });
-      
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+    // ==== Leaderboard computation ====
 
-        const w = canvas.width / 2;
-        const h = canvas.height / 2;
+    function computeLeaderboard() {
+      const counts = {}; // ownerId -> tile count
 
-        ctx.fillStyle = blocks[0]?.color || "#FF0000";
-        ctx.fillRect(0, 0, w, h);
-
-        ctx.fillStyle = blocks[1]?.color || "#0000FF";
-        ctx.fillRect(w, 0, w, h);
-
-        ctx.fillStyle = blocks[2]?.color || "#FFFF00";
-        ctx.fillRect(0, h, w, h);
-
-        ctx.fillStyle = blocks[3]?.color || "#008000";
-        ctx.fillRect(w, h, w, h);
-            for (const id in players) {
-                const p = players[id];
-
-            ctx.font = "bold 30px Georgia";
-            ctx.fillStyle = players[id].color; 
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText('*', p.x, p.y);
-            
-            ctx.font = "14px Georgia";
-            ctx.textAlign = "left";
-            ctx.fillStyle = "black";
-            ctx.fillText(p.name+' ('+Math.round(p.health)+')', p.x+8, p.y-10);
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const cell = tiles[r][c];
+          if (cell && cell.ownerId) {
+            counts[cell.ownerId] = (counts[cell.ownerId] || 0) + 1;
+          }
         }
+      }
 
-        requestAnimationFrame(draw);
+      const entries = Object.keys(counts).map(id => {
+        const p = players[id] || {};
+        const tileCount = counts[id];
+        const pct = (tileCount / TOTAL_TILES) * 100;
+        return {
+          id,
+          name: p.name || 'Unknown',
+          color: p.color || '#ffffff',
+          tileCount,
+          pct
+        };
+      });
+
+      entries.sort((a, b) => b.tileCount - a.tileCount);
+      return entries;
     }
 
-    draw();
+    function updateLeaderboard() {
+      const entries = computeLeaderboard();
+      if (entries.length === 0) {
+        leaderboardList.innerHTML = '<div style="color:#6b7280;">No territory claimed yet.</div>';
+        return;
+      }
+
+      leaderboardList.innerHTML = entries.map(e => {
+        const pctStr = e.pct.toFixed(1);
+        return `
+          <div class="lb-entry">
+            <div class="lb-left">
+              <span class="lb-swatch" style="background:${e.color};"></span>
+              <span class="lb-name">${e.name}</span>
+            </div>
+            <span class="lb-pct">${pctStr}%</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ==== Drawing ====
+
+function drawGrid() {
+  // Fill background
+  ctx.fillStyle = "#020617";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // Draw tiles
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      const cell = tiles[r][c];
+      if (cell && cell.color) {
+        ctx.fillStyle = cell.color;
+        ctx.fillRect(
+          c * TILE_SIZE,
+          r * TILE_SIZE,
+          TILE_SIZE,
+          TILE_SIZE
+        );
+      }
+    }
+  }
+
+  // Subtle grid lines
+  ctx.strokeStyle = "rgba(15, 23, 42, 0.6)";
+  ctx.lineWidth = 1;
+
+  // Vertical lines
+  for (let x = 0; x <= canvas.width; x += TILE_SIZE) {
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, canvas.height);
+    ctx.stroke();
+  }
+
+  // Horizontal lines
+  for (let y = 0; y <= canvas.height; y += TILE_SIZE) {
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(canvas.width, y);   // ✅ two args: (x, y)
+    ctx.stroke();
+  }
+}
+
+
+       function drawPlayers() {
+      for (const id in players) {
+        const p = players[id];
+        if (!p) continue;
+
+        ctx.beginPath();
+        ctx.fillStyle = p.color || "#ffffff";
+        ctx.arc(p.x, p.y, 5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = "#000000";
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        ctx.fillStyle = "#e5e7eb";
+        ctx.font = "11px system-ui";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "top";
+        ctx.fillText(p.name || "?", p.x, p.y + 7);
+      }
+    }
+
+    function loop() {
+      drawGrid();
+      drawPlayers();
+      requestAnimationFrame(loop);
+    }
+
+    loop();
   </script>
-        
 </body>
 </html>
+

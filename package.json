@@ -1,11 +1,17 @@
 {
   "name": "mc_node",
   "version": "1.0.0",
+  "description": "Multiplayer game assignment",
   "main": "mc_server.js",
   "scripts": {
     "start": "node mc_server.js"
   },
   "dependencies": {
-    "express": "^5.1.0"
+    "dotenv": "^16.4.0",
+    "express": "^4.19.2",
+    "express-session": "^1.17.3",
+    "socket.io": "^4.8.0",
+    "uuid": "^9.0.1"
   }
 }
+
