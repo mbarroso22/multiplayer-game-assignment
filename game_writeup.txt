@@ -1,0 +1,29 @@
+Multiplayer Territory Painting Game – Write-Up
+
+This project is a real-time multiplayer territory-painting game where several players share a large canvas 
+and compete to cover the most space with their assigned color. The inspiration comes from simple territory-capture 
+games like Paper.io, but this version is built to be lightweight, easy to play, and focused on live player interaction.
+
+When a user logs in, they choose a name and enter a shared canvas where all other connected players are visible. 
+Each player receives a unique color and appears at a random starting location on the board. Movement is controlled 
+with the arrow keys. As a player moves, they leave a trail of color behind them, and every tile they step over becomes 
+painted in their color. The board updates instantly for every player in the session.
+
+The game encourages interaction because players constantly overwrite one another’s territory. Any color that a player 
+paints can be taken by someone else, so the board naturally evolves into a competitive battle for space. Players often 
+run into each other’s areas, try to take over open regions, or race to cover fresh territory. Because the canvas is shared 
+and updates in real time, every action affects every other player.
+
+A live leaderboard is displayed on the side of the game screen. It shows each player’s name, the color assigned to them, and 
+the percentage of the entire canvas they currently control. The leaderboard updates continuously as players move and repaint tiles. 
+This creates a sense of competition even without formal scoring or elimination mechanics.
+
+To play the game, the user simply logs in, enters the canvas, and starts moving with the arrow keys. There are no time limits, 
+no winning conditions, and no deaths or resets. The experience is open-ended and entirely driven by competition for territory. 
+The goal is to paint more of the board than any of the other players currently online.
+
+From a technical perspective, the game uses an HTML canvas for drawing, along with a Node.js and Socket.IO backend to manage real-time 
+communication. The server keeps track of all player positions, colors, and painted tiles. Updates are efficiently broadcast to all 
+connected players so that everyone sees the same board state. The project is deployed using Docker on an Azure virtual machine. The game 
+remains active as long as the server is running, and the board persists until the server is restarted.
+
